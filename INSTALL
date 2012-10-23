@@ -1,0 +1,15 @@
+To install (as root):
+
+    $ python setup.py
+
+If you are using Ubuntu you may need to install python*-dev.
+
+To distribute with your application, simply copy the taskit/ tree into the 
+main dir of your application.
+
+You may wish to do this for two reasons:
+
+1) Not everyone has TaskIt installed, therefore if you ship it, your users 
+   won't have to install it themselves.
+
+2) Shipping TaskIt locks in features and locks out new bugs.

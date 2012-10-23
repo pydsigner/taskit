@@ -1,0 +1,93 @@
+#!/bin/sh -e
+# ============================================
+#  taskitd - Starts the TaskIt worker daemon.
+# ============================================
+#
+# :Usage: /etc/init.d/taskitd {start|stop|restart|kill|hard-restart|status}
+#
+# Based on celeryd
+
+
+### BEGIN INIT INFO
+# Provides:          taskitd
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $network $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: taskit worker daemon
+### END INIT INFO
+
+#set -e
+
+# E.g. "/usr/local/bin"
+CTL_DIR=""
+
+CTL_EXEC="python $CTL_DIR/taskitctl"
+CTL_ARGS="127.0.0.1 54543"
+
+# E.g. python3 /var/taskit/server.py
+RUN_EXEC=""
+
+RUN_ARGS="0.0.0.0 54543"
+
+SLEEP_TIME=1.5
+
+start() {
+    for host in $(python "$CTL_DIR/port_expander.py" $RUN_ARGS); do 
+        echo $host "--> started";
+    done
+    $RUN_EXEC $RUN_ARGS &
+}
+
+stop() {
+    $CTL_EXEC stop $CTL_ARGS
+    # We have to finish all tasks before stopping
+    sleep $SLEEP_TIME
+    # It will probably take some time for the server to actually shut down
+    sleep $SLEEP_TIME
+}
+
+restart() {
+    stop
+    start
+}
+
+kill() {
+    $CTL_EXEC kill $CTL_ARGS
+    # It will probably take some time for the server to actually shut down
+    sleep $SLEEP_TIME
+}
+
+hard_restart() {
+    kill
+    start
+}
+
+status() {
+    $CTL_EXEC status $CTL_ARGS
+}
+
+case "$1" in
+    start)
+        start
+    ;;
+    stop)
+        stop
+    ;;
+    restart)
+        restart
+    ;;
+    kill)
+        kill
+    ;;
+    hard-restart)
+        hard_restart
+    ;;
+    status)
+        status
+    ;;
+    *)
+        echo "Usage: /etc/init.d/taskitd {start|stop|restart|kill|hard-restart|status}"
+        exit 1
+    ;;
+esac
