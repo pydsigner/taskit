@@ -1,8 +1,23 @@
 #!/usr/bin/env python
+
+"""
+taskitctl -- send commands and introspective messages to a TaskIt backend.
+
+  taskitctl {-h|--help|help}
+Show help and exit.
+
+  taskitctl command host ports
+Send `command` to the the TaskIt backends running on the `ports` of `host`, 
+where command is one of "stop", "kill", or "status", and ports is one of 
+"number", "number,number2,number3...", or "number-number2".
+"""
+
 import sys
 import socket
 
+from taskit.frontend import FrontEnd
 from taskit.common import STOP, KILL, STATUS
+
 from port_expander import get_ports
 
 
@@ -10,30 +25,44 @@ COMMANDS = {'stop': (STOP, 'stopped'), 'kill': (KILL, 'terminated'),
             'status': (STATUS, 'up, %s jobs running')}
 
 
-def send_msg(host, msg, note):
+def send_msg(frontend, backend, signal, note):
+    """
+    frontend -- The FrontEnd to be used for the connection.
+    backend  -- The (host, port) that the BackEnd to be reached is running on.
+    signal   -- The signal to be sent.
+    note     -- What should be returned if the transmission is successful. If 
+                this string contains '%s', the result of the transmission will 
+                be %ed into it.
+    """
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(host)
-        sock.send(msg)
+        # Try to get the response to the signal
+        msg = frontend.send_signal(backend, signal)
     except socket.error:
-        return 'down'
-    
-    if '%s' in note:
-        res = sock.recv(2048).decode()
+        # Could not make a connection, there is no TaskIt backend running on 
+        # that host and port
+        note = 'down'
     else:
-        res = ()
-    
-    sock.close()
-    
-    return note % res
+        # If we have a slot for the response, fill it in
+        if '%s' in note:
+            note %= msg
+    # Whatever we have, whatever it is, return.
+    return note
 
 
 def main():
+    if len(sys.argv) != 4 or sys.argv[1] in ('-h' '--help', 'help'):
+        print(__doc__)
+        return
+    
     command, host, ports = sys.argv[1:]
-    command = COMMANDS[command]
+    signal, note = COMMANDS[command]
+    frontend = FrontEnd()
+    
     for port in get_ports(ports):
-        res = send_msg((host, port), *command)
-        print('%s:%s --> %s' % (host, port, res))
+        backend = (host, port)
+        frontend.add_backends(backend)
+        res = send_msg(frontend, backend, signal, note)
+        print('%s:%s --> %s' %(host, port, res))
 
 
 if __name__ == '__main__':

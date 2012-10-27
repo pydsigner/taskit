@@ -1,11 +1,14 @@
 """
-Copyright (c) 2012 Daniel Foerster/Dsigner Software <pydsigner@gmail.com>
+A light-weight task management library.
 
 TaskIt is a light-weight library to turn a function into a full-featured, 
 threadable task. It is completely X-Python Compatible and has no external 
 dependencies. The simple version is completely self-contained, whereas the 
 distributed version has a simple, obvious way to connect with the backends.
+
 --------------------------------------------------------------------------------
+
+Copyright (c) 2012 Daniel Foerster/Dsigner Software <pydsigner@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -20,4 +23,4 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = '1.3.1'
+__version__ = '3.0'

@@ -33,9 +33,8 @@ class OutToError(OutToLog):
     
     """
     A specifically purposed file-like interface to the logging mechanism, 
-    designed to be used with:
-    
-        sys.stderr = OutToError(logger)
+    designed to be used with
+      sys.stderr = OutToError(logger)
     """
     
     def __init__(self, log):
@@ -57,6 +56,9 @@ class Splitter(object):
     """
     
     def __init__(self, files=[]):
+        """
+        files -- The files to which the calls should be split.
+        """
         self.files = files
     
     def close(self):
@@ -80,12 +82,18 @@ class Splitter(object):
 
 
 class FileLogger(object):
+    
+    """
+    A logger handler for file-like objects, such as sys.stdout, a file, or a 
+    Splitter().
+    """
+    
     def __init__(self, fobj, allowed=[DEBUG, INFO, ERROR, IMPORTANT], flush=5):
         """
-        @fobj    -- The file-like object to be written to
-        @allowed -- The log message types that will be logged
-        @flush   -- How many lines to write before flush()ing if greater than 
-                    zero, otherwise the file-object will never be flushed.
+        fobj    -- The file-like object to be written to
+        allowed -- The log message types that will be logged
+        flush   -- How many lines to write before flush()ing if greater than 
+                   zero, otherwise the file-object will never be flushed.
         """
         self.fobj = fobj
         self.allowed = allowed
@@ -93,6 +101,9 @@ class FileLogger(object):
         self.count = 0
     
     def __call__(self, importance, msg):
+        """
+        Log message `msg` with `importance` importance.
+        """
         if importance in self.allowed:
             self.fobj.write(self._format(importance, msg))
         self.count += 1

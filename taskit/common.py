@@ -4,7 +4,8 @@ import pickle
 
 
 __all__ = ['DEFAULT_PORT', 'STOP', 'KILL', 'STATUS', 'bytes', 'basestring', 
-           'JSONCodec', 'PickleCodec']
+           'FirstByteCorruptionError', 'FirstByteProtocol', 'JSONCodec', 
+           'PickleCodec']
 
 DEFAULT_PORT = 54543
 
@@ -19,12 +20,68 @@ else:
     basestring = str
 
 
-STOP = bytes('<stop>', 'utf-8')
-KILL = bytes('<kill>', 'utf-8')
-STATUS = bytes('<status>', 'utf-8')
+STOP = '<stop>'
+KILL = '<kill>'
+STATUS = '<status>'
+
+
+class FirstByteCorruptionError(Exception):
+    """
+    Exception raised when the first byte of a FB LMTP message is not a 0 or 1.
+    """
+
+
+class FirstByteProtocol(object):
+    
+    """
+    A mixin class that has methods for sending and receiving information using 
+    the First Byte long message transfer protocol.
+    """
+    
+    first = 4
+    
+    def __init__(self, send_size=2048):
+        """
+        send_size -- The maximum length of the message pieces created. Will not 
+                     be exceeded, but will often not be reached. This value 
+                     should not exceed 8192 (the largest power of 2 with a 
+                     length of 4)
+        """
+        self.send_size = send_size
+        self.data_size = send_size - 1
+        self.first_msg = bytes(str(self.send_size).zfill(self.first), 'utf-8')
+    
+    def recv(self, sock):
+        size = int(sock.recv(self.first))
+        
+        data = b''
+        bit = b'1'
+        while bit == b'1':
+            raw = sock.recv(size)
+            bit = raw[0]
+            data += raw[1:]
+            if bit not in (b'0', b'1'):
+                raise FirstByteCorruptionError(
+                  'Protocol corruption detected! Check that the other side is ' 
+                  'not sending bigger chunks than this side is receiving.')
+        return data.decode()
+    
+    def send(self, sock, data):
+        sock.send(self.first_msg)
+        
+        data = bytes(data, 'utf-8')
+        while data:
+            bit = b'0' if len(data) < self.send_size else b'1'
+            sock.send(bit + data[:self.data_size])
+            data = data[self.data_size:]
 
 
 class JSONCodec(object):
+    
+    """
+    Standard codec using JSON. Good balance of scope and support.
+    """
+    
     @staticmethod
     def encode(obj):
         return json.dumps(obj)
@@ -34,6 +91,12 @@ class JSONCodec(object):
 
 
 class PickleCodec(object):
+    
+    """
+    Basic codec using pickle (default version) for encoding. Do not use if 
+    cross-language support is desired.
+    """
+    
     @staticmethod
     def encode(obj):
         return pickle.dumps(obj)

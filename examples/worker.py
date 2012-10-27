@@ -3,7 +3,7 @@ import time
 import sys
 sys.path.append('..')
 
-from taskit.backend import BackEnd
+from taskit.backend import BackEnd, ADMIN_TASKS
 from taskit.log import FileLogger, INFO
 
 
@@ -12,11 +12,17 @@ def random_wait(number):
     return number * 2
 
 
+def error_maker():
+    assert False, 'Why ever did you call this!?'
+
+
 def main():
     log = FileLogger(sys.stdout)
     log(INFO, 'Starting...')
-
-    backend = BackEnd({'wait-double': random_wait}, logger=log)
+    
+    tasks = ADMIN_TASKS
+    tasks.update({'wait-double': random_wait, 'get-error': error_maker})
+    backend = BackEnd(tasks, logger=log)
     backend.main()
 
 

@@ -36,7 +36,7 @@ to
 
 Which, if one typed fast enough, increased the time.sleep(), or put the code 
 into a script, would raise 
-ThreadTimeout('Could not acquire lock within the time allotted')
+ResyncWaitTimeout('Could not acquire lock within the time allotted')
 
 Note that though these example explain the basic use and features of 
 Mediator(), it truly becomes useful when used in situations where either one is 
@@ -48,7 +48,7 @@ have other things which may be accomplished while the thread is running:
 >>> do_some_time_consuming_stuff()
 >>> res = mediator.get()
 
-Or vice vera (that is, the function has the finished product but needs to send 
+Or vice versa (that is, the function has the finished product but needs to send 
 out some network signals, close some files, etc.):
 
 >>> def process(mediator, args):
@@ -60,16 +60,14 @@ See also the resync.py example script.
 """
 
 import time
-try:
-    from thread import allocate_lock, error
-except ImportError:
-    from _thread import allocate_lock, error
+
+from .threaded import *
 
 
-__all__ = ['ThreadTimeout', 'Mediator']
+__all__ = ['ResyncWaitTimeout', 'Mediator', 'Resyncer']
 
 
-class ThreadTimeout(error):
+class ResyncWaitTimeout(error):
     pass
 
 
@@ -86,26 +84,36 @@ class Mediator(object):
         
     def _wait(self, timeout):
         """
-        Based upon an extract from threading.Condition().wait()
+        Based upon an extract from threading.Condition().wait(). Immediately 
+        tries to acquire the lock, and then sleeps for a period of time (going 
+        1/2ms..1ms..2ms..4ms..50ms), repeating until the lock is acquired or 
+        the timeout limit is reached.
         """
         endtime = time.time() + timeout
         # Initial delay of .5ms
         delay = 0.0005
         while 1:
-            gotit = self._lock.acquire(0)
-            if gotit:
-                break
+            if self._lock.acquire(0):
+                return
+            # Nope, let's see if we have some time left to sleep
             remaining = endtime - time.time()
             if remaining <= 0:
+                # Nope, let's break to the error
                 break
+            # Yes, let's increase the delay up to a maximum of 50ms, and 
+            # limited to the remaining time
             delay = min(delay * 2, remaining, .05)
             time.sleep(delay)
-        raise ThreadTimeout('Could not acquire lock within the time allotted')
+        raise ResyncWaitTimeout(
+          'Could not acquire lock within the time allotted')
         
     
     def set_result(self, res):
         """
-        The worker thread should call this if it was successful.
+        The worker thread should call this if it was successful. Unlike normal 
+        functions, which will return None if execution is allowed to fall off 
+        the end, either set_result() or self_error() must be called, or the 
+        the get()ing side will hang.
         """
         self.result = (True, res)
         self._lock.release()
@@ -120,6 +128,10 @@ class Mediator(object):
         self._lock.release()
     
     def get(self, timeout=None):
+        """
+        Get a result or raise an error. If `timeout` is not None, this function 
+        will wait for only `timeout` seconds before raising ThreadTimeout().
+        """
         if timeout is None:
             self._lock.acquire()
         else:
@@ -130,3 +142,43 @@ class Mediator(object):
             return res[1]
         else:
             raise res[1]
+
+
+class Resyncer(object):
+    
+    """
+    A basic wrapper using Mediator() for standard use. Will resync any standard 
+    callable.
+    """
+    
+    def __init__(self, func, *args, **kw):
+        """
+        The actual call will do func(*args, **kw)
+        """
+        self.mediator = Mediator()
+        self.func = func
+        self.args = args
+        self.kw = kw
+    
+    def _wrapper(self):
+        """
+        Wraps around a few calls which need to be made in the same thread.
+        """
+        try:
+            res = self.func(*self.args, **self.kw)
+        except Exception as e:
+            self.mediator.set_error(e)
+        else:
+            self.mediator.set_result(res)
+    
+    def start(self):
+        """
+        Start the resync'd function.
+        """
+        threaded(self._wrapper, ())
+    
+    def get(self, timeout=None):
+        """
+        Get the result of the resync'd function. Simply calls Mediator().get().
+        """
+        return self.mediator.get(timeout)
