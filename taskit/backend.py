@@ -33,10 +33,10 @@ def build_backend(tasks, default_host=('127.0.0.1', DEFAULT_PORT), *args,
       file.py localhost 54545
     """
     host, port = default_host
-    if len(sys.args) > 1:
-        host = sys.args[1]
+    if len(sys.argv) > 1:
+        host = sys.argv[1]
     if len(sys.args) > 2:
-        port = sys.args[2]
+        port = sys.argv[2]
     
     return BackEnd(tasks, host, port, *args, **kw)
 
