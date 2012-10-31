@@ -12,7 +12,9 @@ Overview
 --------
 
 The TaskIt DTPM interface is a symmetrical sandwich of four parts: 
+
 TaskIt --> JSON --> FirstByte --> Sockets --> FirstByte --> JSON --> TaskIt. 
+
 At each point in the sandwich above, information is decomposed by the 
 communicator until it reaches the socket, where it is transported to the 
 communicatee and recomposed into a useful object.
@@ -22,6 +24,7 @@ Decomposition: TaskIt
 
 Regular results are retrieved and become ['success', result] pairs. Errors are 
 caught and become ['error', type, args] groups.
+
 Example: return 50 --> ['success', 50]
 
 Decomposition: JSON

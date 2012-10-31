@@ -169,6 +169,8 @@ class BackEnd(FirstByteProtocol):
         self.started_task()
         try:
             func(*args, **kw)
+        except Exception:
+            self.log(ERROR, 'Subtask %s(*%s, **%s) failed!' % (func, args, kw))
         finally:
             self.finished_task()
     
@@ -229,6 +231,9 @@ class BackEnd(FirstByteProtocol):
                     # We have timed out, hurry and get back to accept those 
                     # connections!
                     pass
+                except KeyboardInterrupt:
+                    # We've been told to quit, do so!
+                    self.terminate_server()
                 else:
                     threaded(self._handler, (conn,))
             

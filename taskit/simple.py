@@ -50,6 +50,9 @@ class Task(object):
         except Exception as e:
             if error_cb is None:
                 # Just let it explode into the thread-space
+                # TODO: This doesn't necessarily do what we want, but there is 
+                # no other way to do so. If all that is desired is logging, 
+                # error_cb should be a callable that will take care of that.
                 raise
             elif error_cb:
                 error_cb(e)
@@ -69,4 +72,4 @@ class Task(object):
         Thread it and forget it.
         """
         # We want to silence errors
-        self.callback(null_cb, False)
+        self.callback(null_cb, False, *args, **kw)

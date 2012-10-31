@@ -7,6 +7,7 @@ import socket
 from .threaded import *
 from .common import *
 from .log import *
+from .simple import null_cb
 
 
 __all__ = ['BackendNotAvailableError', 'BackendProcessingError', 'FrontEnd']
@@ -107,7 +108,7 @@ class FrontEnd(FirstByteProtocol):
         """
         if isinstance(host, basestring):
             return (host, self.default_port)
-        return host
+        return tuple(host)
     
     def _sorter(self, backend):
         """
@@ -123,8 +124,7 @@ class FrontEnd(FirstByteProtocol):
             res = self.work(task, *args, **kw)
         except BackendProcessingError as e:
             if error_cb is None:
-                # Just let it explode into the thread-space
-                raise
+                self.log(ERROR, e.__traceback__)
             elif error_cb:
                 error_cb(e)
         else:
@@ -288,7 +288,10 @@ class FrontEnd(FirstByteProtocol):
         Threads the task, then runs a callback on success or an error callback
         on fail.
         
-        For information on `task`, *args, and **kw, see
+        cb       -- The function to be called with a successful result.
+        error_cb -- The function to be called when an error occurs.
+        
+        For information on `task`, *args, and **kw, see work().
         """
         threaded(self._do_cb, (task, cb, error_cb) + args, kw)
     
@@ -296,7 +299,7 @@ class FrontEnd(FirstByteProtocol):
         """
         Thread it and forget it.
         
-        For information on the arguments to this method, see work(), which this 
-        simply wraps in a thread.
+        For information on the arguments to this method, see work().
         """
-        threaded(self.work, (task,) + args, kw)
+        # We want to silence errors
+        self.callback(task, null_cb, False, *args, **kw)
