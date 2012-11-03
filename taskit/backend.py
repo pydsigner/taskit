@@ -146,12 +146,10 @@ class BackEnd(FirstByteProtocol):
             # Get and package the result
             res = ['success', obj(*args, **kw)]
         except Exception as e:
-            self.log(ERROR, 'Error while fullfilling task %r: %r' % 
-                            (task, e.__traceback__))
+            self.log(ERROR, 'Error while fullfilling task %r: %r' % (task, e))
             res = ['error', e.__class__.__name__, e.args]
         else:
             self.log(INFO, 'Finished fulfilling task %r' % task)
-            
         finally:
             self.send(conn, self.codec.encode(res))
             self.finished_task()
