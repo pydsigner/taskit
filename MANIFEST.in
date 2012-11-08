@@ -1,0 +1,5 @@
+recursive-include examples *.py
+recursive-include daemonizing *.py
+recursive-include speed_test *.py
+recursive-include docs *.md
+include README.md
