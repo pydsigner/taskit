@@ -99,12 +99,11 @@ class BackEnd(FirstByteProtocol):
                     use to determine the responsiveness: it is used for socket 
                     timeouts and while:sleep() wait loops.
         """
-        FirstByteProtocol.__init__(self)
+        FirstByteProtocol.__init__(self, logger)
         
         self.tasks = tasks
         self.host = host
         self.port = port
-        self.log = logger
         self.codec = codec
         self.task_count = 0
         # Is this necessary to avoid problems with the task counter getting 

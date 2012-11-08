@@ -2,6 +2,8 @@ import time
 import json
 import pickle
 
+from .log import null_logger, ERROR
+
 
 __all__ = ['DEFAULT_PORT', 'STOP', 'KILL', 'STATUS', 'bytes', 'basestring', 
            'FirstByteCorruptionError', 'FirstByteProtocol', 'JSONCodec', 
@@ -40,13 +42,17 @@ class FirstByteProtocol(object):
     
     first = 4
     
-    def __init__(self, send_size=2048):
+    def __init__(self, logger=null_logger, send_size=2048):
         """
         send_size -- The maximum length of the message pieces created. Will not 
                      be exceeded, but will often not be reached. This value 
                      should not exceed 8192 (the largest power of 2 with a 
                      length of 4)
         """
+        self.set_size(send_size)
+        self.log = logger
+    
+    def set_size(self, send_size):
         self.send_size = send_size
         self.data_size = send_size - 1
         self.first_msg = bytes(str(self.send_size).zfill(self.first), 'utf-8')
@@ -54,17 +60,21 @@ class FirstByteProtocol(object):
     def recv(self, sock):
         size = int(sock.recv(self.first))
         
-        data = b''
-        bit = b'1'
-        while bit == b'1':
-            raw = sock.recv(size)
+        data = ''
+        bit = '1'
+        while bit == '1':
+            raw = sock.recv(size).decode()
+            
             bit = raw[0]
-            data += raw[1:]
-            if bit not in (b'0', b'1'):
+            if bit not in ('0', '1'):
+                self.log(ERROR, 'First char %r not one of "0" or "1"!' % bit)
                 raise FirstByteCorruptionError(
                   'Protocol corruption detected! Check that the other side is ' 
                   'not sending bigger chunks than this side is receiving.')
-        return data.decode()
+            
+            data += raw[1:]
+        
+        return data
     
     def send(self, sock, data):
         sock.send(self.first_msg)

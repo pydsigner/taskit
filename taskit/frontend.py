@@ -61,9 +61,8 @@ class FrontEnd(FirstByteProtocol):
         logger       -- A logger supporting the taskit.log interface. 
         codec        -- A codec to be used in converting messages into strings.
         """
-        FirstByteProtocol.__init__(self)
+        FirstByteProtocol.__init__(self, logger)
         
-        self.log = logger
         self.default_port = default_port
         self.backends = {}
         self.task_counter = {}
