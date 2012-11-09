@@ -24,9 +24,14 @@ class OutToLog(object):
     def __init__(self, log, level=INFO):
         self.log = log
         self.level = level
+        self.cache = ''
     
     def write(self, s):
-        self.log(self.level, s)
+        lines = s.split('\n')
+        lines[0] = self.cache + lines[0]
+        while len(lines) > 1:
+            self.log(self.level, lines.pop(0))
+        self.cache = lines.pop(0)
 
 
 class OutToError(OutToLog):

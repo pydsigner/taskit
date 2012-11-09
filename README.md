@@ -15,18 +15,18 @@ The basic same-process task module, the logging module, and the multi-purpose
 resyncronization module fall into this category, as well as the threaded 
 module.
 
-simple.py is just that -- a simple task creator. A task can be run in three 
+*simple.py* is just that -- a simple task creator. A task can be run in three 
 ways: waiting, callbacks, or ignored.
 
-log.py provides the refreshingly simple logging mechanism for TaskIt, with 
+*log.py* provides the refreshingly simple logging mechanism for TaskIt, with 
 splitters, file-like interfaces, and an interface to file-like objects.
 
-resync.py provides a novel way to get the best of both the synchronous and 
+*resync.py* provides a novel way to get the best of both the synchronous and 
 asynchronous worlds, with a simple yet powerful API allowing things such as a 
 basic producer-consumer model, handing off the results of a callback to another 
 function, and more.
 
-threaded.py centralizes the imports (currently three) from thread/_thread.
+*threaded.py* centralizes the imports (currently three) from thread/_thread.
 
 Distributed modules
 -------------------
@@ -37,14 +37,14 @@ without obfuscating the transport mechanism. By default, the transport
 mechanism uses standard JSON, but a pickle codec is also available, and writing 
 custom codecs is quite simple.
 
-common.py provides common constants, functions, and classes.
+*common.py* provides common constants, functions, and classes.
 
-backend.py is the backend of the distributed task processing model. It provides 
-DTPM server writers with the ability to use almost any function without 
-modification, and gives allowances for special cases. 
+*backend.py* is the backend of the distributed task processing model. It 
+provides DTPM server writers with the ability to use almost any function 
+without modification, and gives allowances for special cases. 
 
-frontend.py is the frontend to the DTPM. The API is similar to that of 
-simple.py, with the allowances of routing all calls through a FrontEnd and 
+*frontend.py* is the frontend to the DTPM. The API is similar to that of 
+*simple.py*, with the allowances of routing all calls through a *FrontEnd* and 
 using string identifiers. It provides it's own job count as well as access to 
 the backend's job count. It should be noted that a discrepancy between these 
 numbers is generally not a bad sign; client load is not necessarily the same as 
@@ -67,12 +67,12 @@ Examples
 --------
 
 The examples directory contains example scripts for each feature of TaskIt.
-* worker.py is an example for taskit.backend and must be running before main.py
+* *worker.py* is an example for taskit.backend and must be running when main.py 
   is run. 
-* main.py is an example for taskit.frontend and requires worker.py to be run 
+* *main.py* is an example for taskit.frontend and requires worker.py to be run 
   first.
-* resync.py demos every feature of taskit.resync.
-* simple.py displays many of the taskit.simple features.
+* *resync.py* demos every feature of taskit.resync.
+* *simple.py* displays many of the taskit.simple features.
 
 Documentation
 -------------

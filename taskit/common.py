@@ -1,13 +1,14 @@
 import time
 import json
 import pickle
+import sys
 
 from .log import null_logger, ERROR
 
 
 __all__ = ['DEFAULT_PORT', 'STOP', 'KILL', 'STATUS', 'bytes', 'basestring', 
-           'FirstByteCorruptionError', 'FirstByteProtocol', 'JSONCodec', 
-           'PickleCodec']
+           'show_err', 'FirstByteCorruptionError', 'FirstByteProtocol', 
+           'JSONCodec', 'PickleCodec']
 
 DEFAULT_PORT = 54543
 
@@ -25,6 +26,10 @@ else:
 STOP = '<stop>'
 KILL = '<kill>'
 STATUS = '<status>'
+
+
+def show_err():
+    sys.excepthook(*sys.exc_info())
 
 
 class FirstByteCorruptionError(Exception):

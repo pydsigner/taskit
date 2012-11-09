@@ -3,8 +3,10 @@ The local version of TaskIt is a simple asynchronator, similar to Twisted, but
 much simpler and more Pythonistic and without an event-loop.
 """
 
+import sys
 
 from .threaded import *
+from .common import show_err
 
 
 __all__ = ['null_cb', 'taskit', 'Task']
@@ -49,11 +51,7 @@ class Task(object):
             res = self.work(*args, **kw)
         except Exception as e:
             if error_cb is None:
-                # Just let it explode into the thread-space
-                # TODO: This doesn't necessarily do what we want, but there is 
-                # no other way to do so. If all that is desired is logging, 
-                # error_cb should be a callable that will take care of that.
-                raise
+                show_err()
             elif error_cb:
                 error_cb(e)
         else:

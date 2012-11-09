@@ -124,6 +124,7 @@ class FrontEnd(FirstByteProtocol):
         except BackendProcessingError as e:
             if error_cb is None:
                 self.log(ERROR, e.__traceback__)
+                show_err()
             elif error_cb:
                 error_cb(e)
         else:

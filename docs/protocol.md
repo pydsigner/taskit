@@ -13,7 +13,7 @@ Overview
 
 The TaskIt DTPM interface is a symmetrical sandwich of four parts: 
 
-TaskIt --> JSON --> FirstByte --> Sockets --> FirstByte --> JSON --> TaskIt. 
+**TaskIt --> JSON --> FirstByte --> Sockets --> FirstByte --> JSON --> TaskIt**
 
 At each point in the sandwich above, information is decomposed by the 
 communicator until it reaches the socket, where it is transported to the 
@@ -25,7 +25,7 @@ Decomposition: TaskIt
 Regular results are retrieved and become ['success', result] pairs. Errors are 
 caught and become ['error', type, args] groups.
 
-Example: return 50 --> ['success', 50]
+*Example: return 50 --> ['success', 50]*
 
 Decomposition: JSON
 -------------------
@@ -34,7 +34,7 @@ Already at this point, no knowledge of what is happening exists. All that is
 known is that an object must be translated into a string, which is exactly what 
 JSON does.
 
-Example: ['success', 50] --> '["success", 50]'
+*Example: ['success', 50] --> '["success", 50]'*
 
 Decomposition: FirstByte
 ------------------------
@@ -44,7 +44,7 @@ a preamble to announce the chunk size, and breaks the message up into articles,
 each prefixed with a 1 if another article follows, or a 0 if this article is 
 the last. These articles are at this point chunk size or shorter.
 
-Example: '["success", 50]' --> send('2048'), send('0["success", 50]')
+*Example: '["success", 50]' --> send('2048'), send('0["success", 50]')*
 
 Middleman: Sockets
 ------------------
@@ -60,14 +60,14 @@ Now on the communicatee side, FirstByte gets the the preamble to discover the
 chunk size, and reads the articles as they come in, looking for the 0 prefix. 
 It then has the complete message recomposed.
 
-Example: recv('2048'), recv('0["success", 50]') --> '["success", 50]'
+*Example: recv('2048'), recv('0["success", 50]') --> '["success", 50]'*
 
 Recomposition: JSON
 -------------------
 
 JSON now takes the string and retranslates it into an object.
 
-Example: '["success", 50]' --> ['success', 50]
+*Example: '["success", 50]' --> ['success', 50]*
 
 Recomposition: TaskIt
 ---------------------
@@ -77,4 +77,4 @@ If the object is an error, TaskIt raises a single error, with the sent type and
 args information. If the object is a success, TaskIt returns the result 
 included.
 
-Example: ['success', 50] --> return 50
+*Example: ['success', 50] --> return 50*

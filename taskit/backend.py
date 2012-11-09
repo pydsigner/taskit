@@ -84,20 +84,23 @@ class BackEnd(FirstByteProtocol):
     """
     
     def __init__(self, tasks, host='127.0.0.1', port=DEFAULT_PORT, 
-                 logger=null_logger, codec=JSONCodec, end_resp=END_RESP):
+                 logger=null_logger, codec=JSONCodec, end_resp=END_RESP, 
+                 tracebacks=True):
         """
-        tasks    -- a dict consisting of task:callable or task:(callable,bool) 
-                    items. The boolean, which defaults to False, determines 
-                    whether or not the BackEnd() instance will be passed as the 
-                    first argument to the callable. Useful for tasks needing 
-                    backend.subtask(). 
-        host     -- The host to bind to. 
-        port     -- The port to bind to. 
-        logger   -- A logger supporting the taskit.log interface. 
-        codec    -- A codec to be used in converting messages into strings. 
-        end_resp -- The time (in seconds) that stop_server() and main() should 
-                    use to determine the responsiveness: it is used for socket 
-                    timeouts and while:sleep() wait loops.
+        tasks      -- a dict consisting of task:callable or 
+                      task:(callable, bool) items. The boolean, which defaults 
+                      to False, determines whether or not the BackEnd() 
+                      instance will be passed as the first argument to the 
+                      callable. Useful for tasks needing backend.subtask(). 
+        host       -- The host to bind to. 
+        port       -- The port to bind to. 
+        logger     -- A logger supporting the taskit.log interface. 
+        codec      -- A codec to be used in converting messages into strings. 
+        end_resp   -- The time (in seconds) that stop_server() and main() 
+                      should use to determine the responsiveness: it is used 
+                      for socket timeouts and while x:sleep() wait loops.
+        tracebacks -- Whether or not the server should output task tracebacks 
+                      (in the same way that they would be if not caught).
         """
         FirstByteProtocol.__init__(self, logger)
         
@@ -105,6 +108,7 @@ class BackEnd(FirstByteProtocol):
         self.host = host
         self.port = port
         self.codec = codec
+        self.trackbacks = tracebacks
         self.task_count = 0
         # Is this necessary to avoid problems with the task counter getting 
         # corrupted? That is, are self.task_count += 1 and self.task_count -= 1 
@@ -147,6 +151,8 @@ class BackEnd(FirstByteProtocol):
         except Exception as e:
             self.log(ERROR, 'Error while fullfilling task %r: %r' % (task, e))
             res = ['error', e.__class__.__name__, e.args]
+            if self.tracebacks:
+                show_err()
         else:
             self.log(INFO, 'Finished fulfilling task %r' % task)
         finally:

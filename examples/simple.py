@@ -43,6 +43,9 @@ def main():
     log(INFO, 'Ignoring error_time()')
     error_time.ignore()
     
+    log(INFO, 'Using default error handling with error_time()')
+    error_time.callback(cb, None)
+    
     log(INFO, 'Using callback with instant_time()')
     instant_time.callback(cb, error_cb)
     
