@@ -4,16 +4,18 @@ TaskIt DTPM Implementation
 Brief
 -----
 
-This document describes the interface between a TaskIt frontend and a TaskIt 
-backend. This document does not investigate the use of Pickle instead of JSON, 
-as Pickle is a very specific solution but also a simple switch of codecs.
+This document describes the process by which a TaskIt backend returns results 
+to a TaskIt client. This document does not investigate the use of Pickle 
+instead of JSON, as Pickle is a very specific solution but also a simple switch 
+of codecs. Nor does this document discuss the chain of events involved in 
+sending the execution request to the backend in the first place; this, however, 
+is exactly the same, except that the payload and its handling are different.
 
 Overview
 --------
 
 The TaskIt DTPM interface is a symmetrical sandwich of four parts: 
-
-**TaskIt --> JSON --> FirstByte --> Sockets --> FirstByte --> JSON --> TaskIt**
+TaskIt, JSON, FirstBytes, and Sockets.
 
 At each point in the sandwich above, information is decomposed by the 
 communicator until it reaches the socket, where it is transported to the 
@@ -36,15 +38,19 @@ JSON does.
 
 *Example: ['success', 50] --> '["success", 50]'*
 
-Decomposition: FirstByte
-------------------------
+Decomposition: FirstBytes
+-------------------------
 
-This layer was recently added to enable the transfer of long messages. It uses 
-a preamble to announce the chunk size, and breaks the message up into articles, 
-each prefixed with a 1 if another article follows, or a 0 if this article is 
-the last. These articles are at this point chunk size or shorter.
+This layer was recently added to enable the transfer of long messages; then it 
+was improved to be quite robust. In this protocol, each message is split up 
+into articles with a set chunk size. Each article has a 5-byte header. The 
+first byte is a 0 or a 1: a zero tells the recipient that this article is the 
+last, whilst a 1 announces that another will follow. After this is a 4-byte 
+payload-size indicator in hexadecimal. Imediately afterwards comes the payload.
+While most messages will probably consist of only one article, this protocol 
+ensures that there is no arbitrary limit on message size.
 
-*Example: '["success", 50]' --> send('2048'), send('0["success", 50]')*
+*Example: '["success", 50]' --> send('0000f["success", 50]')*
 
 Middleman: Sockets
 ------------------
@@ -53,14 +59,14 @@ Standard TCP sockets are then used to get the units of information from the
 communicator to the communicatee. This will take several sends, depending upon 
 the number of articles to be sent.
 
-Recomposition: FirstByte
-------------------------
+Recomposition: FirstBytes
+-------------------------
 
-Now on the communicatee side, FirstByte gets the the preamble to discover the 
-chunk size, and reads the articles as they come in, looking for the 0 prefix. 
-It then has the complete message recomposed.
+Now on the communicatee side, FirstBytes gets the articles as they come in, 
+reading the fixed-size headers first to piece the following payloads back 
+together. 
 
-*Example: recv('2048'), recv('0["success", 50]') --> '["success", 50]'*
+*Example: recv('0000f'), recv('["success", 50]') --> '["success", 50]'*
 
 Recomposition: JSON
 -------------------

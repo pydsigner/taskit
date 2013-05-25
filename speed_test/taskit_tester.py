@@ -9,7 +9,7 @@ from taskit.frontend import FrontEnd
 bigstring = '4' * 3000
 num = 10000
 
-backend = (sys.argv[1:] or ['localhost'])[0]
+backend = sys.argv[1] if len(sys.argv) > 1 else 'localhost'
 frontend = FrontEnd([backend])
 
 
@@ -36,7 +36,6 @@ def main():
     print('(remote) add, no-delay   -->', timeit.timeit(remote_1, number=num))
     print('(control) echo, no-delay -->', timeit.timeit(local_2, number=num))
     print('(remote) echo, no-delay  -->', timeit.timeit(remote_2, number=num))
-    frontend.send_stop(backend)
 
 
 if __name__ == '__main__':

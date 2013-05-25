@@ -1,6 +1,6 @@
 """
-The local version of TaskIt is a simple asynchronator, similar to Twisted, but 
-much simpler and more Pythonistic and without an event-loop.
+The local version of TaskIt is a simple asynchronator with some similarities to 
+Twisted, but is much simpler, more Pythonistic, and event-loop-less.
 """
 
 import sys

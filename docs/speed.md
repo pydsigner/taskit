@@ -19,12 +19,9 @@ other scripts.
 Results
 -------
 
-During benchmarking on a PowerEdge T110 II equipped with an Intel Xeon X3430 
-CPU, and using the loopback interface associated with 'localhost', lag for the 
-'add' task tested at .46ms, and lag for the 'echo' task (which, it should be 
+Because benchmarking scores for 10,000 runs were found to be highly variant, 
+the run count was temporarily increased to 100,000. During the benchmarking on 
+a server using the loopback interface associated with 'localhost', lag for the 
+'add' task tested at .490ms, and lag for the 'echo' task (which, it should be 
 noted, is long enough to require being split up into two send()s) tested at 
-.50ms. Testing against a remote server has not yet been accomplished. 
-
-Profiling has shown that, at least for loopback connections, most time is spent 
-in actually opening the connection This, of course, was predicted by the 
-minimal slowing of the 'echo' task in the testing described above.
+.571ms. Testing against a remote server has not yet been accomplished. 

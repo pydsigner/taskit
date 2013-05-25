@@ -1,8 +1,9 @@
 """
-Resychronize your threads.
+TaskIt ReSync: Resychronize your threads.
 
-This module provides a Mediator() class to allow resynchronization. All that is 
-required is access to the Mediator() instance from the thread and the waiter. 
+This module provides a `Mediator()` class to allow resynchronization. All that 
+is required is access to the `Mediator()` instance from the thread and the 
+waiter. 
 
 A simple example: 
 
@@ -28,21 +29,22 @@ class, such as changing
 to
 ...     mediator.set_error(ValueError(args))
 
-Which would raise ValueError((5, 6)) instead; or changing
+Which would raise `ValueError((5, 6))` instead; or changing
 
 >>> mediator.get()
 to
 >>> mediator.get(.5)
 
-Which, if one typed fast enough, increased the time.sleep(), or put the code 
-into a script, would raise 
-ResyncWaitTimeout('Could not acquire lock within the time allotted')
+Which, if one typed fast enough, increased the sleep, or put the code into a 
+script, would raise 
+`ResyncWaitTimeout('Could not acquire lock within the time allotted')`.
 
 Note that though these example explain the basic use and features of 
-Mediator(), it truly becomes useful when used in situations where either one is 
-working from the outside (e.g. when writing callbacks for asychronous 
-libraries) or when one could just call a function rather than threading it, but 
-have other things which may be accomplished while the thread is running:
+`Mediator()`, this class truly becomes useful when used in situations where 
+either one is working from the outside (e.g. when writing callbacks for 
+asychronous libraries) or when one could just call a function rather than 
+threading it, but have other things which may be accomplished while the thread 
+is running:
 
 >>> launch_thread(mediator, *args)
 >>> do_some_time_consuming_stuff()
@@ -68,13 +70,19 @@ __all__ = ['ResyncWaitTimeout', 'Mediator', 'Resyncer']
 
 
 class ResyncWaitTimeout(error):
-    pass
+    
+    """
+    An error raised when a `Mediator()` wait loop times out.
+    """
+    
+    def __init__(self):
+        error.__init__(self, 'Could not acquire lock within the time allotted')
 
 
 class Mediator(object):
     
     """
-    A de-asynchronizer with results and errors.
+    A de-asynchronizer which can return results and raise errors.
     """
     
     def __init__(self):
@@ -86,8 +94,8 @@ class Mediator(object):
         """
         Based upon an extract from threading.Condition().wait(). Immediately 
         tries to acquire the lock, and then sleeps for a period of time (going 
-        1/2ms..1ms..2ms..4ms..50ms), repeating until the lock is acquired or 
-        the timeout limit is reached.
+        1/2ms..1ms..2ms..4ms...50ms..50ms), repeating until the lock is 
+        acquired or the timeout limit is reached.
         """
         endtime = time.time() + timeout
         # Initial delay of .5ms
@@ -104,8 +112,7 @@ class Mediator(object):
             # limited to the remaining time
             delay = min(delay * 2, remaining, .05)
             time.sleep(delay)
-        raise ResyncWaitTimeout(
-          'Could not acquire lock within the time allotted')
+        raise ResyncWaitTimeout
         
     
     def set_result(self, res):
@@ -147,8 +154,8 @@ class Mediator(object):
 class Resyncer(object):
     
     """
-    A basic wrapper using Mediator() for standard use. Will resync any standard 
-    callable.
+    A basic wrapper using `Mediator()` for standard use. Will resync any 
+    standard callable.
     """
     
     def __init__(self, func, *args, **kw):

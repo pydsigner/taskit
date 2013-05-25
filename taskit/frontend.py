@@ -45,7 +45,7 @@ class BackendProcessingError(Exception):
                                          self.type, self.args)
 
 
-class FrontEnd(FirstByteProtocol):
+class FrontEnd(FirstBytesProtocol):
     
     """
     The TaskIt DTPM client. 
@@ -61,7 +61,7 @@ class FrontEnd(FirstByteProtocol):
         logger       -- A logger supporting the taskit.log interface. 
         codec        -- A codec to be used in converting messages into strings.
         """
-        FirstByteProtocol.__init__(self, logger)
+        FirstBytesProtocol.__init__(self, logger)
         
         self.default_port = default_port
         self.backends = {}
@@ -75,11 +75,10 @@ class FrontEnd(FirstByteProtocol):
         Used internally to safely increment `backend`s task count. Returns the 
         overall count of tasks for `backend`.
         """
-        self.backend_mutex.acquire()
-        self.backends[backend] += 1
-        self.task_counter[backend] += 1
-        this_task = self.task_counter[backend]
-        self.backend_mutex.release()
+        with self.backend_mutex:
+            self.backends[backend] += 1
+            self.task_counter[backend] += 1
+            this_task = self.task_counter[backend]
         return this_task
     
     def _canceling_task(self, backend):
@@ -87,18 +86,16 @@ class FrontEnd(FirstByteProtocol):
         Used internally to decrement `backend`s current and total task counts 
         when `backend` could not be reached.
         """
-        self.backend_mutex.acquire()
-        self.backends[backend] -= 1
-        self.task_counter[backend] -= 1
-        self.backend_mutex.release()
+        with self.backend_mutex:
+            self.backends[backend] -= 1
+            self.task_counter[backend] -= 1
     
     def _closing_task(self, backend):
         """
         Used internally to safely decrement `backend`s task count.
         """
-        self.backend_mutex.acquire()
-        self.backends[backend] -= 1
-        self.backend_mutex.release()
+        with self.backend_mutex:
+            self.backends[backend] -= 1
     
     def _expand_host(self, host):
         """

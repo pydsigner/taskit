@@ -17,11 +17,11 @@ def error_maker():
 
 
 def main():
-    log = FileLogger(sys.stdout)
+    log = FileLogger(sys.stdout, flush=0)
     log(INFO, 'Starting...')
     
-    tasks = ADMIN_TASKS
-    tasks.update({'wait-double': random_wait, 'get-error': error_maker})
+    tasks = {'wait-double': random_wait, 'get-error': error_maker}
+    tasks.update(ADMIN_TASKS)
     backend = BackEnd(tasks, logger=log)
     backend.main()
 

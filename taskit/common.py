@@ -7,7 +7,7 @@ from .log import null_logger, ERROR
 
 
 __all__ = ['DEFAULT_PORT', 'STOP', 'KILL', 'STATUS', 'bytes', 'basestring', 
-           'show_err', 'FirstByteCorruptionError', 'FirstByteProtocol', 
+           'show_err', 'FirstBytesCorruptionError', 'FirstBytesProtocol', 
            'JSONCodec', 'PickleCodec']
 
 DEFAULT_PORT = 54543
@@ -32,63 +32,101 @@ def show_err():
     sys.excepthook(*sys.exc_info())
 
 
-class FirstByteCorruptionError(Exception):
+class FirstBytesCorruptionError(Exception):
     """
     Exception raised when the first byte of a FB LMTP message is not a 0 or 1.
     """
 
 
-class FirstByteProtocol(object):
+class FirstBytesProtocol(object):
     
     """
     A mixin class that has methods for sending and receiving information using 
-    the First Byte long message transfer protocol.
+    the First Bytes long message transfer protocol.
     """
     
     first = 4
+    # '%0<first>x'
+    size_insert = '%04x'
     
-    def __init__(self, logger=null_logger, send_size=2048):
+    def __init__(self, logger=null_logger, data_size=2048):
         """
-        send_size -- The maximum length of the message pieces created. Will not 
-                     be exceeded, but will often not be reached. This value 
-                     should not exceed 8192 (the largest power of 2 with a 
-                     length of 4)
+        data_size -- The maximum length of the data slices created. Will not be 
+                     exceeded, but in many cases will not ever be reached. This 
+                     value can be any positive "short", but the real-world 
+                     network concerns mentioned in the official documentation 
+                     for `socket.recv()` apply here -- be kind to the program 
+                     that your program is communicating with!
         """
-        self.set_size(send_size)
+        self.set_size(data_size)
         self.log = logger
     
-    def set_size(self, send_size):
-        self.send_size = send_size
-        self.data_size = send_size - 1
-        self.first_msg = bytes(str(self.send_size).zfill(self.first), 'utf-8')
+    def _size_bytes(self, size):
+        return bytes(self.size_insert % size, 'utf-8')
     
-    def recv(self, sock):
-        size = int(sock.recv(self.first))
-        
+    def _wire_recv(self, sock, size):
+        left = size
         data = ''
-        bit = '1'
-        while bit == '1':
-            raw = sock.recv(size).decode()
+        while left:
+            chunk = sock.recv(left).decode()
+            if not chunk:
+                raise FirstBytesCorruptionError(
+                  'Socket connection or remote codebase is broken!')
             
-            bit = raw[0]
-            if bit not in ('0', '1'):
-                self.log(ERROR, 'First char %r not one of "0" or "1"!' % bit)
-                raise FirstByteCorruptionError(
-                  'Protocol corruption detected! Check that the other side is ' 
-                  'not sending bigger chunks than this side is receiving.')
-            
-            data += raw[1:]
+            data += chunk
+            left -= len(chunk)
         
         return data
     
-    def send(self, sock, data):
-        sock.send(self.first_msg)
+    def set_size(self, data_size):
+        """
+        Set the data slice size.
+        """
+        if len(str(data_size)) > self.first:
+            raise ValueError(
+              'Send size is too large for message size-field width!')
+        
+        self.data_size = data_size
+    
+    def recv(self, sock):
+        data = ''
+        # Cache the header size for speed
+        hsize = self.first + 1
+        while 1:
+            header = self._wire_recv(sock, hsize)
+            bit = header[0]
+            if bit not in ('0', '1'):
+                self.log(ERROR, 'First char %r not one of "0" or "1"!' % bit)
+                raise FirstBytesCorruptionError(
+                  'Protocol corruption detected -- '
+                  'first char in message was not a 0 or a 1!'
+                )
+            
+            # So, how big a piece do we need to grab?
+            size = int(header[1:], 16)
+            # Get it.
+            data += self._wire_recv(sock, size)
+            
+            # If nothing else will be sent, then we are finished.
+            if bit == '0':
+                return data
+    
+    def send(self, sock, data):        
+        # Cache max data size for speed
+        ds = self.data_size
+        # Also cache the "max data size"-sized-data prefix
+        norm = b'1' + self._size_bytes(ds)
         
         data = bytes(data, 'utf-8')
         while data:
-            bit = b'0' if len(data) < self.send_size else b'1'
-            sock.send(bit + data[:self.data_size])
-            data = data[self.data_size:]
+            dlen = len(data)
+            if dlen < ds:
+                pre = b'0' + self._size_bytes(dlen)
+            else:
+                pre = norm
+            
+            sock.sendall(pre + data[:ds])
+            data = data[ds:]
 
 
 class JSONCodec(object):

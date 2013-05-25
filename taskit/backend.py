@@ -69,7 +69,7 @@ def task_count(backend):
     """
     A task to allow getting the backend's task count. Should be supported.
     """
-    # Yes, a string, because that's what the client expects
+    # Yes, a string, because that is what the client expects
     return str(backend.task_count)
 
 
@@ -77,7 +77,7 @@ ADMIN_TASKS = {STOP: (task_stop, True), KILL: (task_kill, True),
                STATUS: (task_count, True)}
 
 
-class BackEnd(FirstByteProtocol):
+class BackEnd(FirstBytesProtocol):
     
     """
     The TaskIt DTPM server. Starts, tracks, and handles tasks.
@@ -102,13 +102,13 @@ class BackEnd(FirstByteProtocol):
         tracebacks -- Whether or not the server should output task tracebacks 
                       (in the same way that they would be if not caught).
         """
-        FirstByteProtocol.__init__(self, logger)
+        FirstBytesProtocol.__init__(self, logger)
         
         self.tasks = tasks
         self.host = host
         self.port = port
         self.codec = codec
-        self.trackbacks = tracebacks
+        self.tracebacks = tracebacks
         self.task_count = 0
         # Is this necessary to avoid problems with the task counter getting 
         # corrupted? That is, are self.task_count += 1 and self.task_count -= 1 
@@ -182,9 +182,8 @@ class BackEnd(FirstByteProtocol):
         Safely announce that a new task is being started. Used internally; 
         if a task needs to run a subthread, use subtask().
         """
-        self.task_mutex.acquire()
-        self.task_count += 1
-        self.task_mutex.release()
+        with self.task_mutex:
+            self.task_count += 1
     
     def finished_task(self):
         """
@@ -193,9 +192,8 @@ class BackEnd(FirstByteProtocol):
         be completely wrecked. subtask() will take care of this for subthreads 
         started using it.
         """
-        self.task_mutex.acquire()
-        self.task_count -= 1
-        self.task_mutex.release()
+        with self.task_mutex:
+            self.task_count -= 1
     
     def stop_server(self):
         """
